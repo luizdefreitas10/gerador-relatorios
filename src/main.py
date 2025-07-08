@@ -14,6 +14,12 @@ from utils import (
     ajustar_largura_colunas,
     arquivo_em_uso,
 )
+from sections.introduction.introduction import gerar_secao_introducao
+from sections.legalbasis.legalbasis import gerar_secao_fundamentacao_legal
+from sections.nonconformity.nonconformity import (
+    gerar_secao_nao_conformidades_constatadas,
+)
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 
 def main():
@@ -36,7 +42,7 @@ def main():
 
     fiscalizacoes_df = pd.read_excel(CAMINHO_PLANILHA, sheet_name="Fiscalizações")
     nao_conformidades_df = pd.read_excel(
-        CAMINHO_PLANILHA, sheet_name="Não-conformidades"
+        CAMINHO_PLANILHA, sheet_name="Não-conformidades "
     )
 
     if COLUNA_STATUS not in fiscalizacoes_df.columns:
@@ -56,10 +62,30 @@ def main():
         id_fisc = row["ID da Fiscalização"]
         doc = Document()
 
-        adicionar_texto_centralizado(doc, "RELATÓRIO DE FISCALIZAÇÃO CTR 02/2024")
-        adicionar_texto_centralizado(doc, f"Terminal: {row['Local']}")
-        adicionar_texto_centralizado(doc, f"Data: {row['Data']}")
+        doc.add_picture(os.path.join(BASE_DIR, "assets/logo_arpe.png"), width=Inches(2))
+        logo_arpe = doc.paragraphs[-1]
+        logo_arpe.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        adicionar_texto_centralizado(doc, "DIRETORIA DE REGULAÇÃO TÉCNICO-OPERACIONAL")
+        adicionar_texto_centralizado(doc, "COORDENADORIA DE TRANSPORTES E RODOVIAS")
+        adicionar_texto_centralizado(
+            doc, "RELATÓRIO DE FISCALIZAÇÃO TÉCNICO-OPERACIONAL CTR 01/2025"
+        )
+        adicionar_texto_centralizado(
+            doc, "TERMINAIS RODOVIÁRIOS INTERMUNICIPAIS CONCEDIDOS À EMPRESA SOCICAM"
+        )
+        adicionar_texto_centralizado(
+            doc, "CONTRATO DE CONCESSÃO DE SERVIÇO PÚBLICO Nº 1.041.080/08"
+        )
+
         doc.add_section(WD_SECTION.NEW_PAGE)
+
+        gerar_secao_introducao(doc, row)
+
+        gerar_secao_fundamentacao_legal(doc)
+
+        gerar_secao_nao_conformidades_constatadas(
+            doc, row, nao_conformidades_df, FOTOS_DIR
+        )
 
         adicionar_titulo_secao(doc, "V - CONSTATAÇÕES")
         adicionar_paragrafo_justificado(
