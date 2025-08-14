@@ -80,7 +80,7 @@ def gerar_relatorio():
         id_fisc = row["ID da Fiscalização"]
         doc = Document()
 
-        doc.add_picture(os.path.join(BASE_DIR, "assets/logo_arpe.png"), width=Inches(2))
+        doc.add_picture(os.path.join(BASE_DIR, "assets/logo_arpe.jpeg"), width=Inches(2))
         logo_arpe = doc.paragraphs[-1]
         logo_arpe.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
         adicionar_texto_centralizado(doc, "DIRETORIA DE REGULAÇÃO TÉCNICO-OPERACIONAL")

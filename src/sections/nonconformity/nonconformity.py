@@ -38,27 +38,46 @@ def gerar_secao_nao_conformidades_constatadas(
             doc, "⚠️ Coluna 'Terminal' não encontrada na planilha de não conformidades."
         )
         return
+    
+    # Contador para os terminais
+    num_terminal = 1 
 
     # Agrupar por terminal
     for terminal, grupo_terminal in nc_fisc.groupby("Terminal"):
-        # Título do terminal (nível 2) — usar formatação igual à adicionar_titulo_secao e tudo em maiúsculo
+        # Extrair sigla do terminal (se houver)
+        if "(" in terminal and ")" in terminal:
+            sigla_terminal = terminal.split("(")[-1].replace(")", "").strip()
+        else:
+            sigla_terminal = ""
+
+        # Título do terminal com numeração
         par_terminal = doc.add_paragraph()
-        par_terminal.add_run(f"{terminal.upper()}").bold = True
+        par_terminal.add_run(f"3.{num_terminal} - {terminal.upper()}").bold = True
+
+        # Contador para as NCs desse terminal
+        num_nc = 1 
 
         # Agrupar por número da não conformidade dentro de cada terminal
         for nc_id, grupo_nc in grupo_terminal.groupby("Nº"):
             descricao = grupo_nc["Não Conformidade"].iloc[0]
-
-            # Título da NC (nível 3) — também em negrito, preto e agora sublinhado
+            
+            # Título da NC com formato solicitado (somente "Não Conformidade TIP 01" em negrito e sublinhado)
             par_nc = doc.add_paragraph()
-            run_nc = par_nc.add_run(f"{nc_id} - {descricao}")
-            run_nc.bold = True
-            run_nc.underline = True
-            run_nc.font.size = Pt(10)
-            run_nc.font.color.rgb = RGBColor(0, 0, 0)
+
+            # Parte 1: Título em negrito e sublinhado
+            run_nc_titulo = par_nc.add_run(f"Não Conformidade {sigla_terminal} {str(num_nc).zfill(2)}")
+            run_nc_titulo.bold = True
+            run_nc_titulo.underline = True
+            run_nc_titulo.font.size = Pt(10)
+            run_nc_titulo.font.color.rgb = RGBColor(0, 0, 0)
+
+            # Parte 2: Descrição normal
+            run_nc_desc = par_nc.add_run(f" – {descricao}")
+            run_nc_desc.font.size = Pt(10)
+            run_nc_desc.font.color.rgb = RGBColor(0, 0, 0)
+
 
             for _, linha in grupo_nc.iterrows():
-                # Supondo que o separador seja ';'
                 nomes_fotos = (
                     [f.strip() for f in str(linha["Foto"]).split(";") if f.strip()]
                     if pd.notna(linha["Foto"])
@@ -83,6 +102,8 @@ def gerar_secao_nao_conformidades_constatadas(
                         if legenda:
                             adicionar_paragrafo_justificado(doc, legenda)
 
+            num_nc += 1           
+
         # 🔽 OBSERVAÇÕES IMPORTANTES PARA O TERMINAL
         obs_terminais = observacoes_df[
             (observacoes_df["ID da Fiscalização"] == id_fisc)
@@ -90,8 +111,7 @@ def gerar_secao_nao_conformidades_constatadas(
         ]
 
         if not obs_terminais.empty:
-            adicionar_titulo_secao(doc, "OBSERVAÇÕES IMPORTANTES")
-            # Deixar o último parágrafo (título) sublinhado, maiúsculo e tamanho igual ao da NC
+            adicionar_titulo_secao(doc, "OBSERVAÇÕES IMPORTANTES:")
             par_titulo_obs = doc.paragraphs[-1]
             run_titulo_obs = par_titulo_obs.runs[0]
             run_titulo_obs.text = run_titulo_obs.text.upper()
@@ -104,7 +124,6 @@ def gerar_secao_nao_conformidades_constatadas(
                     if pd.notna(obs["Observações"])
                     else ""
                 )
-                # Supondo que o separador seja ';'
                 nomes_fotos_obs = (
                     [f.strip() for f in str(obs["Foto"]).split(";") if f.strip()]
                     if pd.notna(obs["Foto"])
@@ -132,4 +151,5 @@ def gerar_secao_nao_conformidades_constatadas(
                     elif legenda_obs:
                         adicionar_legenda_formatada(doc, legenda_obs)
 
-    ## doc.add_section(WD_SECTION.NEW_PAGE)
+        # Incrementa o número do terminal ao final
+        num_terminal += 1
