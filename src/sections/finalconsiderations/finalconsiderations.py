@@ -3,6 +3,7 @@ from utils import (
     adicionar_paragrafo_justificado,
     adicionar_texto_centralizado,
 )
+from datetime import datetime
 
 
 def gerar_secao_consideracoes_finais(doc, row):
@@ -28,7 +29,9 @@ def gerar_secao_consideracoes_finais(doc, row):
     adicionar_paragrafo_justificado(doc, texto3)
     adicionar_paragrafo_justificado(doc, texto4)
 
-    adicionar_texto_centralizado(doc, f"\n\nRecife, {row['Data']}.")
+    # Pega a data atual no formato dd/mm/aaaa
+    data_atual = datetime.now().strftime("%d/%m/%Y")
+    adicionar_texto_centralizado(doc, f"\n\nRecife, {data_atual}.")
     adicionar_texto_centralizado(doc, "\n\n")
 
     # Assinaturas dos responsáveis (pode ser uma string separada por ";" ou ",")

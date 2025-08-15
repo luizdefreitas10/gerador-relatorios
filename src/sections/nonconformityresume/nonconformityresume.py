@@ -1,19 +1,12 @@
 from utils import adicionar_titulo_secao
 from docx.shared import Pt
-from docx.oxml.ns import qn
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.section import WD_SECTION
 
 
 def gerar_secao_resumo_nao_conformidades(doc, row, nao_conformidades_df):
     """
     Gera a seção '4. RESUMO DAS NÃO CONFORMIDADES IDENTIFICADAS' no formato visual do relatório oficial,
-    com agrupamento por terminal e número.
-
-    Parâmetros:
-    - doc: objeto Document.
-    - row: linha da fiscalização (pandas.Series).
-    - nao_conformidades_df: DataFrame com as colunas: 'ID da Fiscalização', 'Terminal', 'Nº', 'Não Conformidade'.
+    com agrupamento por terminal e número sequencial.
     """
 
     espaco1 = doc.add_paragraph()
@@ -35,7 +28,7 @@ def gerar_secao_resumo_nao_conformidades(doc, row, nao_conformidades_df):
         doc.add_paragraph("⚠️ Colunas obrigatórias não encontradas na planilha.")
         return
 
-    # Criar a tabela com 2 colunas
+    # Criar tabela
     tabela = doc.add_table(rows=1, cols=2)
     tabela.style = "Table Grid"
     tabela.alignment = WD_TABLE_ALIGNMENT.LEFT
@@ -45,35 +38,52 @@ def gerar_secao_resumo_nao_conformidades(doc, row, nao_conformidades_df):
     cabecalho[0].text = "TERMINAL"
     cabecalho[1].text = "NÃO CONFORMIDADE"
 
-    # Aplicar estilo ao cabeçalho
+    # Estilo cabeçalhos
     for cell in cabecalho:
         for par in cell.paragraphs:
             run = par.runs[0]
             run.bold = True
             run.font.size = Pt(11)
 
-    # Agrupar por Terminal e listar NCs numeradas
+    # Agrupar por Terminal
     for terminal, grupo in nc_fisc.groupby("Terminal"):
-        grupo = grupo.sort_values(by="Nº")  # ordena as NCs
+        grupo = grupo.sort_values(by="Nº")
+
+        # Extrair sigla
+        if "(" in terminal and ")" in terminal:
+            sigla_terminal = terminal.split("(")[-1].replace(")", "").strip()
+        else:
+            sigla_terminal = terminal[:3].upper()
+
+        # Remover "TERMINAL DE"/"TERMINAL DO" e deixar maiúsculo
+        nome_terminal = terminal.upper()
+        nome_terminal = nome_terminal.replace("TERMINAL DE ", "").replace("TERMINAL DO ", "").strip()
+
+        num_nc = 1  # contador sequencial para NCs
 
         for idx, (_, linha) in enumerate(grupo.iterrows()):
             row_cells = tabela.add_row().cells
 
-            # Primeira linha do grupo: escreve terminal
+            # Primeira linha do grupo: título do terminal
             if idx == 0:
-                row_cells[0].text = f"{terminal}"
+                run_terminal = row_cells[0].paragraphs[0].add_run(nome_terminal)
+                run_terminal.bold = True
+                run_terminal.font.size = Pt(11)
             else:
-                row_cells[0].text = ""  # manter célula vazia nas linhas seguintes
+                row_cells[0].text = ""
 
-            # Coluna da NC formatada com número + descrição
-            numero_nc = str(linha["Nº"]).strip()
-            titulo = f"Não Conformidade {numero_nc}"
+            # Coluna da NC
             descricao = linha["Não Conformidade"].strip()
-            run = row_cells[1].paragraphs[0].add_run(f"{titulo} – {descricao}")
-            run.bold = True
-            run.font.size = Pt(11)
+
+            paragrafo_nc = row_cells[1].paragraphs[0]
+            run_titulo = paragrafo_nc.add_run(f"{sigla_terminal} {num_nc}")
+            run_titulo.bold = True
+            run_titulo.font.size = Pt(11)
+
+            run_desc = paragrafo_nc.add_run(f" – {descricao}")
+            run_desc.font.size = Pt(11)
+
+            num_nc += 1
 
     espaco = doc.add_paragraph()
     espaco.paragraph_format.space_after = Pt(24)
-
-    ## doc.add_section(WD_SECTION.NEW_PAGE)

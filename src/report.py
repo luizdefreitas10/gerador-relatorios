@@ -2,7 +2,6 @@ from docx import Document
 from docx2pdf import convert
 from docx.shared import Inches
 import pandas as pd
-from docx2pdf import convert
 from tqdm import tqdm
 from docx.enum.section import WD_SECTION
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
@@ -29,12 +28,6 @@ from utils import (
 def gerar_relatorio():
     """
     Gera o relatório completo (docx + pdf) com base nos dados da fiscalização.
-
-    Parâmetros:
-    - row: linha da planilha (Series).
-    - nao_conformidades_df: DataFrame da aba 'Não-conformidades'.
-    - fotos_dir: pasta com as imagens.
-    - pasta_saida: onde salvar o .docx e .pdf.
     """
 
     if getattr(sys, "frozen", False):
@@ -58,9 +51,11 @@ def gerar_relatorio():
     nao_conformidades_df = pd.read_excel(
         CAMINHO_PLANILHA, sheet_name="Não-conformidades "
     )
-
     observacoes_df = pd.read_excel(
         CAMINHO_PLANILHA, sheet_name="Observações Importantes"
+    )
+    recomendacoes_df = pd.read_excel(
+        CAMINHO_PLANILHA, sheet_name="Recomendações"
     )
 
     if COLUNA_STATUS not in fiscalizacoes_df.columns:
@@ -100,7 +95,7 @@ def gerar_relatorio():
         gerar_secao_introducao(doc, row)
         gerar_secao_fundamentacao_legal(doc)
         gerar_secao_nao_conformidades_constatadas(
-            doc, row, nao_conformidades_df, FOTOS_DIR, observacoes_df
+            doc, row, nao_conformidades_df, FOTOS_DIR, observacoes_df, recomendacoes_df
         )
         gerar_secao_resumo_nao_conformidades(doc, row, nao_conformidades_df)
         gerar_secao_consideracoes_finais(doc, row)
@@ -113,15 +108,27 @@ def gerar_relatorio():
         convert(caminho_docx, caminho_pdf)
         fiscalizacoes_df.at[idx, COLUNA_STATUS] = True
 
+    # 🔹 Garantir que a coluna Data seja salva no formato dd/mm/aaaa
+    if "Data" in fiscalizacoes_df.columns:
+        fiscalizacoes_df["Data"] = pd.to_datetime(
+            fiscalizacoes_df["Data"], errors="coerce"
+        ).dt.strftime("%d/%m/%Y")
+
     if not arquivo_em_uso(CAMINHO_PLANILHA):
         with pd.ExcelWriter(
             CAMINHO_PLANILHA, engine="openpyxl", mode="a", if_sheet_exists="replace"
         ) as writer:
-            # Substitui somente as abas que foram manipuladas
             fiscalizacoes_df.to_excel(writer, sheet_name="Fiscalizações", index=False)
             nao_conformidades_df.to_excel(
                 writer, sheet_name="Não-conformidades ", index=False
             )
+            observacoes_df.to_excel(
+                writer, sheet_name="Observações Importantes", index=False
+            )
+            recomendacoes_df.to_excel(
+                writer, sheet_name="Recomendações", index=False
+            )
+
         ajustar_largura_colunas(CAMINHO_PLANILHA)
 
     print("🎉 Relatórios gerados e planilha atualizada com sucesso.")

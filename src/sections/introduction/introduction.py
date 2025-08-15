@@ -1,21 +1,9 @@
 from docx import Document
-from docx.enum.section import WD_SECTION
 from docx.enum.text import WD_ALIGN_PARAGRAPH
-from utils import (
-    adicionar_paragrafo_justificado,
-    adicionar_titulo_secao,
-)
-
+from utils import adicionar_titulo_secao
+from datetime import datetime
 
 def gerar_secao_introducao(doc: Document, row):
-    """
-    Gera a seção '1. INTRODUÇÃO' do relatório com base nos dados da PLANILHA DE FISCALIZAÇÕES.
-
-    Parâmetros:
-    - doc: objeto Document do python-docx.
-    - row: linha da planilha contendo os dados da fiscalização.
-    """
-
     adicionar_titulo_secao(doc, "1. INTRODUÇÃO")
 
     par = doc.add_paragraph()
@@ -27,8 +15,15 @@ def gerar_secao_introducao(doc: Document, row):
     par.add_run(
         ", firmado entre o Governo do Estado, representado pela Secretaria de Transportes (SETRA) e a SOCICAM - Administração, Projetos e Representações Ltda. A ação foi no dia "
     )
-    par.add_run(str(row["Data"])).bold = True
-    par.add_run(", exclusivamente no Terminal de ")
+
+    # ✅ Garantir formato dd/mm/aaaa no relatório
+    if hasattr(row["Data"], "strftime"):
+        data_formatada = row["Data"].strftime("%d/%m/%Y")
+    else:
+        data_formatada = datetime.strptime(str(row["Data"]), "%Y-%m-%d").strftime("%d/%m/%Y")
+
+    par.add_run(data_formatada).bold = True
+    par.add_run(", exclusivamente no ")
     par.add_run(str(row["Local"])).bold = True
     par.add_run(
         " e nos dias 24 a 28 de março de 2025, nas cidades de Caruaru, Garanhuns, Arcoverde, Serra Talhada e Petrolina. As visitas técnicas foram realizadas pela equipe formada por "
