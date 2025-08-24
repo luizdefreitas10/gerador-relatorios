@@ -105,14 +105,11 @@ def gerar_secao_nao_conformidades_constatadas(
 
             num_obs = 1
             for _, obs in obs_terminais.iterrows():
-                texto_obs = (
-                    str(obs["Observações"]).strip()
+                textos_obs = (
+                    [o.strip() for o in str(obs["Observações"]).split(";") if o.strip()]
                     if pd.notna(obs["Observações"])
-                    else ""
+                    else []
                 )
-                if texto_obs:
-                    adicionar_paragrafo_justificado(doc, f"{num_obs}. {texto_obs}")
-
                 nomes_fotos_obs = (
                     [f.strip() for f in str(obs["Foto"]).split(";") if f.strip()]
                     if pd.notna(obs["Foto"])
@@ -124,19 +121,23 @@ def gerar_secao_nao_conformidades_constatadas(
                     else []
                 )
 
-                for idx, foto_obs in enumerate(nomes_fotos_obs):
-                    foto_path = os.path.join(fotos_dir, foto_obs)
-                    legenda_obs = legendas_obs[idx] if idx < len(legendas_obs) else ""
-                    if os.path.exists(foto_path):
-                        buffer = processar_imagem_para_relatorio(foto_path)
-                        doc.add_picture(buffer, width=Inches(3))
-                        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        aplicar_borda_paragrafo(doc.paragraphs[-1])
-                        if legenda_obs:
+                for i, texto_obs in enumerate(textos_obs):
+                    adicionar_paragrafo_justificado(doc, f"{num_obs}. {texto_obs}")
+
+                    if i < len(nomes_fotos_obs):
+                        foto_path = os.path.join(fotos_dir, nomes_fotos_obs[i])
+                        legenda_obs = legendas_obs[i] if i < len(legendas_obs) else ""
+                        if os.path.exists(foto_path):
+                            buffer = processar_imagem_para_relatorio(foto_path)
+                            doc.add_picture(buffer, width=Inches(3))
+                            doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            aplicar_borda_paragrafo(doc.paragraphs[-1])
+                            if legenda_obs:
+                                adicionar_legenda_formatada(doc, legenda_obs)
+                        elif legenda_obs:
                             adicionar_legenda_formatada(doc, legenda_obs)
-                    elif legenda_obs:
-                        adicionar_legenda_formatada(doc, legenda_obs)
-                num_obs += 1
+
+                    num_obs += 1
 
         # RECOMENDAÇÕES
         rec_terminais = recomendacoes_df[
@@ -152,14 +153,11 @@ def gerar_secao_nao_conformidades_constatadas(
 
             num_rec = 1
             for _, rec in rec_terminais.iterrows():
-                texto_rec = (
-                    str(rec["Recomendação"]).strip()
+                textos_rec = (
+                    [r.strip() for r in str(rec["Recomendação"]).split(";") if r.strip()]
                     if pd.notna(rec["Recomendação"])
-                    else ""
+                    else []
                 )
-                if texto_rec:
-                    adicionar_paragrafo_justificado(doc, f"{num_rec}. {texto_rec}")
-
                 nomes_fotos_rec = (
                     [f.strip() for f in str(rec["Foto"]).split(";") if f.strip()]
                     if pd.notna(rec["Foto"])
@@ -171,18 +169,22 @@ def gerar_secao_nao_conformidades_constatadas(
                     else []
                 )
 
-                for idx, foto_rec in enumerate(nomes_fotos_rec):
-                    foto_path = os.path.join(fotos_dir, foto_rec)
-                    legenda_rec = legendas_rec[idx] if idx < len(legendas_rec) else ""
-                    if os.path.exists(foto_path):
-                        buffer = processar_imagem_para_relatorio(foto_path)
-                        doc.add_picture(buffer, width=Inches(3))
-                        doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        aplicar_borda_paragrafo(doc.paragraphs[-1])
-                        if legenda_rec:
+                for i, texto_rec in enumerate(textos_rec):
+                    adicionar_paragrafo_justificado(doc, f"{num_rec}. {texto_rec}")
+
+                    if i < len(nomes_fotos_rec):
+                        foto_path = os.path.join(fotos_dir, nomes_fotos_rec[i])
+                        legenda_rec = legendas_rec[i] if i < len(legendas_rec) else ""
+                        if os.path.exists(foto_path):
+                            buffer = processar_imagem_para_relatorio(foto_path)
+                            doc.add_picture(buffer, width=Inches(3))
+                            doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
+                            aplicar_borda_paragrafo(doc.paragraphs[-1])
+                            if legenda_rec:
+                                adicionar_legenda_formatada(doc, legenda_rec)
+                        elif legenda_rec:
                             adicionar_legenda_formatada(doc, legenda_rec)
-                    elif legenda_rec:
-                        adicionar_legenda_formatada(doc, legenda_rec)
-                num_rec += 1
+
+                    num_rec += 1
 
         num_terminal += 1
