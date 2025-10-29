@@ -2,50 +2,84 @@ from utils import (
     adicionar_titulo_secao,
     adicionar_paragrafo_justificado,
     adicionar_texto_centralizado,
+    adicionar_texto_esquerda,
 )
 from datetime import datetime
+from docx.document import Document 
 
-
-def gerar_secao_consideracoes_finais(doc, row):
+def _adicionar_assinatura_bloco(doc: Document, nome, cargo, matricula, negrito_nome=True):
     """
-    Gera a seção '5. CONSIDERAÇÕES FINAIS' do relatório.
-    Parâmetros:
-    - doc: objeto Document.
-    - row: linha da fiscalização (Series do DataFrame fiscalizacoes_df).
+    Auxiliar para adicionar um bloco de assinatura formatado e centrado.
+    """
+  
+    if not nome or "xxxxxx" in nome.lower():
+        return
+
+    adicionar_texto_centralizado(doc, nome, negrito=negrito_nome)
+    adicionar_texto_centralizado(doc, cargo, negrito=False)
+    
+    if matricula: 
+        if "matrícula" not in matricula.lower() and "nº" not in matricula.lower():
+            texto_matricula = f"Matrícula: {matricula}"
+        else:
+            texto_matricula = matricula
+            
+        adicionar_texto_centralizado(doc, texto_matricula, negrito=False)
+    
+    doc.add_paragraph() 
+
+def gerar_secao_consideracoes_finais(doc: Document, row):
+    """
+    Gera a seção '6. CONCLUSÃO' do relatório.
     """
 
-    adicionar_titulo_secao(doc, "5. CONSIDERAÇÕES FINAIS")
+    adicionar_titulo_secao(doc, "6. CONCLUSÃO")
 
-    texto1 = "Diante das constatações apontadas no presente Relatório de Fiscalização, solicita-se o seu envio à SOCICAM para que esta apresente as providências para sanar as Não Conformidades evidenciadas, bem como para estabelecer os respectivos prazos de conclusão dos serviços e obras que forem necessários."
-
-    texto2 = "Conforme sinalizado nas Observações Importantes, a Arpe vai continuar monitorando a montagem do elevador para PCD e a adequação do Sistema contra Incêndio e do Sistema de Proteção contra Descargas Atmosféricas (SPDA) no Terminal de Recife. Deve-se levar em consideração que a Concessionária, em carta enviada à Arpe, deu prazo até abril de 2025 para realizar a adequação desses Sistemas nos terminais de Caruaru, Garanhuns e Petrolina, mas não apresentou prazo para os terminais de Arcoverde e Serra Talhada. Dessa forma, recomenda-se que a SOCICAM mantenha a Arpe atualizada com documentos e informações referentes à adequação tanto do Sistema contra Incêndio quanto do Sistema de Proteção contra Descargas Atmosféricas (SPDA) de todos os terminais concedidos."
-
-    texto3 = "É recomendável ainda que a SOCICAM observe a inadequação do armazenamento de objetos nas áreas destinadas aos extintores e que mantenha os equipamentos de auxílio a pessoas com necessidades específicas como cadeiras de rodas e de transbordo de maneira a facilitar o seu uso em caso de necessidade."
-
-    texto4 = "Por fim, indicamos o encaminhamento deste Relatório de Fiscalização para conhecimento da EPTI, na qualidade de Poder Concedente do Contrato de Concessão e gestora do Sistema de Transporte Coletivo Intermunicipal de Passageiros (STCIP-PE)."
+    # Extração de Placeholders para f-string
+    num_monitoramento = str(row.get("Num Monitoramento", "Xº"))
+    ctr_original = str(row.get("CTR Original", "xx/xxxx"))
+    periodo_vistoria = str(row.get("Periodo Vistoria Texto", "xx a xx de MÊS de ANO"))
+    
+    texto1 = (
+        f"Diante das constatações apontadas neste {num_monitoramento} Relatório de Monitoramento do Relatório de Fiscalização "
+        f"Técnico-Operacional CTR {ctr_original}, referente ás vistorias técnicas realizadas no período de {periodo_vistoria}, "
+        f"solicitamos seu envio para a SOCICAM para que sejam informados das Não Conformidades."
+    )
 
     adicionar_paragrafo_justificado(doc, texto1)
-    adicionar_paragrafo_justificado(doc, texto2)
-    adicionar_paragrafo_justificado(doc, texto3)
-    adicionar_paragrafo_justificado(doc, texto4)
 
     # Pega a data atual no formato dd/mm/aaaa
     data_atual = datetime.now().strftime("%d/%m/%Y")
-    adicionar_texto_centralizado(doc, f"\n\nRecife, {data_atual}.")
-    adicionar_texto_centralizado(doc, "\n\n")
+    
+    adicionar_texto_centralizado(doc, f"Recife, {data_atual}.", negrito=False, tamanho_fonte=11)
+    
+    doc.add_paragraph() 
 
-    # Assinaturas dos responsáveis (pode ser uma string separada por ";" ou ",")
     assinantes = str(row.get("Assinatura", "")).split(";")
+    
+    matricula_analista_fixa = "Matricula: nºxxxxxx/xx" 
+    
     for assinante in assinantes:
         nome = assinante.strip()
-        if nome:
-            adicionar_texto_centralizado(doc, "_______________________")
-            adicionar_texto_centralizado(doc, nome)
-            adicionar_texto_centralizado(doc, "Analista de Regulação")
-            adicionar_texto_centralizado(doc, "")  # Espaço em branco entre assinaturas
+        
+        _adicionar_assinatura_bloco(
+            doc, 
+            nome, 
+            "Analista de Regulação", 
+            matricula_analista_fixa,
+            negrito_nome=True
+        )
 
-    adicionar_texto_centralizado(doc, "\nCiente e de acordo:\n")
+    adicionar_texto_esquerda(doc, "Ciente.", negrito=False)
+    
     coordenador = str(row.get("Coordenador", "")).strip()
-    if coordenador:
-        adicionar_texto_centralizado(doc, "_______________________")
-        adicionar_texto_centralizado(doc, coordenador)
+  
+    matricula_coordenador_fixa = "Matricula: nº209640/01"
+    
+    _adicionar_assinatura_bloco(
+        doc, 
+        coordenador, 
+        "Coordenadora de Transportes e Rodovias", 
+        matricula_coordenador_fixa,
+        negrito_nome=True
+    )
